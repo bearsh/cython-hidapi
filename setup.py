@@ -1,9 +1,8 @@
 #!/usr/bin/python
 from Cython.Build import cythonize
-from setuptools import setup, Extension, Distribution
+from setuptools import find_packages, setup, Extension, Distribution
 from subprocess import call, PIPE, Popen
 import os
-import platform
 import re
 import shlex
 import subprocess
@@ -16,12 +15,10 @@ hidapi_libusb_pkgconfig = "hidapi-libusb >= " + min_required_hidapi_version
 hidapi_hidraw_pkgconfig = "hidapi-hidraw >= " + min_required_hidapi_version
 hidapi_pkgconfig = "hidapi >= " + min_required_hidapi_version
 
-tld = os.path.abspath(os.path.dirname(__file__))
+tld = os.path.relpath(os.path.dirname(__file__))
 embedded_hidapi_topdir = os.path.join(tld, "hidapi")
 embedded_hidapi_include = os.path.join(embedded_hidapi_topdir, "hidapi")
 embedded_hidapi_macos_include = os.path.join(embedded_hidapi_topdir, "mac")
-
-ENV = {"PLATFORM": platform.system()}
 
 
 def to_bool(bool_str):
@@ -88,8 +85,8 @@ def hid_from_embedded_hidapi():
     if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
         modules = [
             Extension(
-                "hid",
-                sources=["hid.pyx", hidapi_src("windows")],
+                "chid",
+                sources=["cython/chid.pyx", hidapi_src("windows")],
                 include_dirs=[embedded_hidapi_include],
                 extra_compile_args=["-DHID_API_NO_EXPORT_DEFINE"],
                 libraries=["setupapi"],
@@ -97,14 +94,9 @@ def hid_from_embedded_hidapi():
         ]
 
     elif sys.platform.startswith("darwin"):
-        macos_sdk_path = (
-            subprocess.check_output(["xcrun", "--show-sdk-path"]).decode().strip()
-        )
+        macos_sdk_path = subprocess.check_output(["xcrun", "--show-sdk-path"]).decode().strip()
         modules = [
             Extension(
-                "hid",
-                sources=["hid.pyx", hidapi_src("mac")],
-                include_dirs=[embedded_hidapi_include, embedded_hidapi_macos_include],
                 # TODO: remove -Wno-unreachable-code when the time comes: https://github.com/cython/cython/issues/3172
                 extra_compile_args=[
                     "-isysroot",
@@ -141,26 +133,26 @@ def hid_from_embedded_hidapi():
             HIDAPI_WITH_LIBUSB = True
 
         if HIDAPI_WITH_LIBUSB:
-            hidraw_module = "hidraw"
+            hidraw_module = "chidraw"
             modules.append(
                 pkgconfig_configure_extension(
                     Extension(
-                        "hid",
-                        sources=["hid.pyx", hidapi_src("libusb")],
+                        "chid",
+                        sources=["cython/chid.pyx", hidapi_src("libusb")],
                         include_dirs=[embedded_hidapi_include],
                     ),
                     libusb_pkgconfig,
                 )
             )
         elif HIDAPI_WITH_HIDRAW:
-            hidraw_module = "hid"
+            hidraw_module = "chid"
         else:
             raise ValueError("Unknown HIDAPI backend")
 
         modules.append(
             Extension(
                 hidraw_module,
-                sources=["hidraw.pyx", hidapi_src("linux")],
+                sources=["cython/chidraw.pyx", hidapi_src("linux")],
                 include_dirs=[embedded_hidapi_include],
                 libraries=["udev"],
             )
@@ -170,8 +162,8 @@ def hid_from_embedded_hidapi():
         modules = [
             pkgconfig_configure_extension(
                 Extension(
-                    "hid",
-                    sources=["hid.pyx", hidapi_src("libusb")],
+                    "chid",
+                    sources=["cython/chid.pyx", hidapi_src("libusb")],
                     include_dirs=[embedded_hidapi_include],
                 ),
                 libusb_pkgconfig,
@@ -200,35 +192,27 @@ def hid_from_system_hidapi():
             HIDAPI_WITH_LIBUSB = True
 
         if HIDAPI_WITH_LIBUSB:
-            hidraw_module = "hidraw"
-            modules.append(
-                pkgconfig_configure_extension(
-                    Extension("hid", sources=["hid.pyx"]), hidapi_libusb_pkgconfig
-                )
-            )
+            hidraw_module = "chidraw"
+            modules.append(pkgconfig_configure_extension(Extension("chid", sources=["cython/chid.pyx"]), hidapi_libusb_pkgconfig))
         elif HIDAPI_WITH_HIDRAW:
-            hidraw_module = "hid"
+            hidraw_module = "chid"
         else:
             raise ValueError("Unknown HIDAPI backend")
 
         modules.append(
             pkgconfig_configure_extension(
-                Extension(hidraw_module, sources=["hidraw.pyx"]),
+                Extension(hidraw_module, sources=["cython/chidraw.pyx"]),
                 hidapi_hidraw_pkgconfig,
             )
         )
     else:
-        modules = [
-            pkgconfig_configure_extension(
-                Extension("hid", sources=["hid.pyx"]), hidapi_pkgconfig
-            )
-        ]
+        modules = [pkgconfig_configure_extension(Extension("chid", sources=["cython/chid.pyx"]), hidapi_pkgconfig)]
 
     return modules
 
 
 def find_version():
-    filename = os.path.join(tld, "hid.pyx")
+    filename = os.path.join(tld, "cython/chid.pyx")
     with open(filename) as f:
         text = f.read()
     match = re.search(r"^__version__ = \"(.*)\"$", text, re.MULTILINE)
@@ -274,4 +258,6 @@ setup(
     ],
     ext_modules=cythonize(modules, language_level=3, compile_time_env=ENV),
     setup_requires=["setuptools>=19.0"],
+    packages=find_packages(exclude=["hidraw"] if "_hidraw" not in [x.name for x in modules] else ()),
+    ext_modules=cythonize(modules, language_level=3),
 )

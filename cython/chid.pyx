@@ -1,7 +1,7 @@
 import sys
 import weakref
 
-from chid cimport *
+from chidapi cimport *
 from libc.stddef cimport wchar_t, size_t
 
 
@@ -82,33 +82,11 @@ def version_str():
     """
     return (<bytes>hid_version_str()).decode('ascii')
 
-IF PLATFORM == "Darwin":
-    def darwin_set_open_exclusive(int open_exclusive=1):
-        """Set open exclusive on macOS.
-
-        :param open_exclusive: When set to 0 - all further devices will be opened
-                in non-exclusive mode. Otherwise - all further devices will be opened
-                in exclusive mode. Default = 1
-        """
-
-        cdef int exclusive = open_exclusive
-        hid_darwin_set_open_exclusive(exclusive)
-
-    def darwin_get_open_exclusive():
-        """Get open exclusive on macOS.
-
-        :return: 1 if all further devices will be opened in exclusive mode.
-        :rtype: int
-        """
-        return hid_darwin_get_open_exclusive()
-
 cdef class _closer:
     """Wrap a hid_device *ptr and a provide a way to call hid_close() on it.
 
     Used internally for weakref.finalize, which only accepts Python objects.
     """
-
-    cdef hid_device *_ptr
 
     @staticmethod
     cdef wrap(hid_device *ptr):
@@ -124,10 +102,6 @@ cdef class device:
 
     A device instance can be used to read from and write to a HID device.
     """
-
-    cdef hid_device *_c_hid
-    cdef object __weakref__  # enable weak-reference support
-    cdef object _close
 
     def open(self, int vendor_id=0, int product_id=0, unicode serial_number=None):
         """Open the connection.
@@ -447,35 +421,6 @@ cdef class device:
         """
         return U(<wchar_t*>hid_error(self._c_hid))
 
-    IF PLATFORM == "Darwin":
-        def darwin_get_location_id(self):
-            """Return location id on macOS.
-
-            :return:
-            :rtype: int
-            :raises ValueError: If connection is not opened.
-            :raises IOError:
-            """
-            if self._c_hid == NULL:
-                raise ValueError('not open')
-            cdef unsigned int location_id
-            cdef int r = hid_darwin_get_location_id(self._c_hid, &location_id)
-            if r < 0:
-                raise IOError('get darwin location id error')
-            return location_id
-
-        def darwin_is_device_open_exclusive(self):
-            """Check if the given device is opened in exclusive mode on macOS.
-
-            :param dev: Device class
-            :return: 1 if the device is opened in exclusive mode, 0 - opened in non-exclusive,
-                    -1 - if dev is invalid.
-            :rtype: int
-            :raises ValueError: If connection is not opened.
-            """
-            if self._c_hid == NULL:
-                raise ValueError('not open')
-            return hid_darwin_is_device_open_exclusive(self._c_hid)
 
 # Finalize the HIDAPI library *only* once there are no more references to this
 # module, and it is being garbage collected.

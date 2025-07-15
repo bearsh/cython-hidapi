@@ -7,10 +7,4 @@ include hidapi/mac/*.c
 include hidapi/mac/*.h
 include hidapi/windows/*.c
 include hidapi/windows/*.h
-include LICENSE*.txt
-include tests.py
-include try.py
-include chid.pxd
-include hid.c
-include hid.pyx
-include hidraw.pyx
+include cython/*
