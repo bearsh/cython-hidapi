@@ -1,3 +1,29 @@
 [build-system]
-requires = ["setuptools", "Cython"]
+requires = ["setuptools", "Cython == 3.1.1"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "hidapi"
+description = "A Cython interface to the hidapi from https://github.com/libusb/hidapi"
+authors = [{name = "Pavol Rusnak", email = "pavol@rusnak.io"}]
+maintainers = [{name = "Pavol Rusnak", email = "pavol@rusnak.io"}]
+classifiers = [
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+readme = "README.rst"
+license = "BSD-3-Clause OR GPL-3.0-only OR LicenseRef-Cython-Hidapi"
+license-files = ["LICENSE-bsd.txt", "LICENSE-gpl3.txt", "LICENSE-orig.txt"]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/trezor/cython-hidapi"

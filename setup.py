@@ -234,30 +234,7 @@ else:
 
 
 setup(
-    name="hidapi",
     version=find_version(),
-    description="A Cython interface to the hidapi from https://github.com/libusb/hidapi",
-    long_description=open("README.rst", "rt").read(),
-    author="Pavol Rusnak",
-    author_email="pavol@rusnak.io",
-    maintainer="Pavol Rusnak",
-    maintainer_email="pavol@rusnak.io",
-    url="https://github.com/trezor/cython-hidapi",
-    package_dir={"hid": "hidapi/*"},
-    classifiers=[
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: Microsoft :: Windows",
-        "Operating System :: POSIX",
-        "License :: OSI Approved :: BSD License",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-    ],
-    ext_modules=cythonize(modules, language_level=3, compile_time_env=ENV),
-    setup_requires=["setuptools>=19.0"],
     packages=find_packages(exclude=["hidraw"] if "_hidraw" not in [x.name for x in modules] else ()),
     ext_modules=cythonize(modules, language_level=3),
 )
